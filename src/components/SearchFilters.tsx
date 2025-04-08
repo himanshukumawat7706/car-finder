@@ -1,9 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback, memo } from 'react';
-import { useRouter } from 'next/navigation';
-import { Car } from '@/types/car';
-import { searchCarImages } from '@/utils/googleSearch';
 
 interface SearchFiltersProps {
   onSearch: (filters: {
@@ -16,14 +13,7 @@ interface SearchFiltersProps {
   }) => void;
 }
 
-interface SearchResult {
-  link: string;
-  title: string;
-  image: string;
-}
-
 const SearchFilters = memo(({ onSearch }: SearchFiltersProps) => {
-  const router = useRouter();
   const [filters, setFilters] = useState({
     brand: '',
     model: '',
@@ -34,8 +24,6 @@ const SearchFilters = memo(({ onSearch }: SearchFiltersProps) => {
   });
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
 
   const handleSearch = () => {
     onSearch({
@@ -81,24 +69,6 @@ const SearchFilters = memo(({ onSearch }: SearchFiltersProps) => {
     };
     return debouncedSearch(searchFilters);
   }, [filters, debouncedSearch]);
-
-  const handleImageSearch = async (query: string) => {
-    if (!query.trim()) {
-      setSearchResults([]);
-      return;
-    }
-
-    setIsSearching(true);
-    try {
-      const results = await searchCarImages(query);
-      setSearchResults(results);
-    } catch (error) {
-      console.error('Error searching images:', error);
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
-    }
-  };
 
   if (!mounted) {
     return null;

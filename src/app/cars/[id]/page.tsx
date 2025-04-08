@@ -9,6 +9,7 @@ import { HeartIcon as HeartOutlineIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { WishlistProvider } from '@/context/WishlistContext';
+import Image from 'next/image';
 
 function CarDetailsContent({ car }: { car: Car }) {
   const { isWishlisted, toggleWishlist } = useWishlist();
@@ -47,11 +48,14 @@ function CarDetailsContent({ car }: { car: Car }) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div>
-                <img
+              <div className="relative h-[400px]">
+                <Image
                   src={car.imageUrl}
                   alt={`${car.brand} ${car.model}`}
-                  className="w-full h-auto rounded-lg"
+                  fill
+                  className="object-cover rounded-lg"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  priority
                 />
               </div>
 

@@ -4,6 +4,7 @@ import { useWishlist } from '@/context/WishlistContext';
 import Link from 'next/link';
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import { HeartIcon as HeartOutlineIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
 
 export default function WishlistPage() {
   const { wishlist, toggleWishlist } = useWishlist();
@@ -37,11 +38,15 @@ export default function WishlistPage() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {wishlist.map((car) => (
             <div key={car.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-              <img
-                src={car.imageUrl}
-                alt={`${car.brand} ${car.model}`}
-                className="w-full h-48 object-cover"
-              />
+              <div className="relative h-48">
+                <Image
+                  src={car.imageUrl}
+                  alt={`${car.brand} ${car.model}`}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                />
+              </div>
               <div className="p-4">
                 <div className="flex justify-between items-start">
                   <div>

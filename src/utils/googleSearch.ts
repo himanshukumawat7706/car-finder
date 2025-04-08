@@ -19,37 +19,30 @@ const fallbackImages = [
   }
 ];
 
-export async function searchCarImages(query: string) {
-  try {
-    // If no query, return fallback images
-    if (!query.trim()) {
-      return fallbackImages;
-    }
+interface SearchResult {
+  link: string;
+  title: string;
+  image: string;
+}
 
+export async function searchCarImages(query: string): Promise<SearchResult[]> {
+  try {
     const response = await fetch(
-      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(
-        query + ' car'
-      )}&per_page=10&client_id=${process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY}`
+      `https://www.googleapis.com/customsearch/v1?key=${process.env.NEXT_PUBLIC_GOOGLE_API_KEY}&cx=${process.env.NEXT_PUBLIC_GOOGLE_CSE_ID}&q=${encodeURIComponent(query)}&searchType=image`
     );
 
     if (!response.ok) {
-      console.warn('Failed to fetch from Unsplash, using fallback images');
-      return fallbackImages;
+      throw new Error('Failed to fetch images');
     }
 
     const data = await response.json();
-    
-    if (!data.results || data.results.length === 0) {
-      return fallbackImages;
-    }
-
-    return data.results.map((item: any) => ({
-      link: item.urls.full,
-      title: item.alt_description || 'Car image',
-      image: item.urls.regular,
+    return data.items.map((item: SearchResult) => ({
+      link: item.link,
+      title: item.title,
+      image: item.image
     }));
   } catch (error) {
-    console.error('Error fetching car images:', error);
-    return fallbackImages;
+    console.error('Error searching images:', error);
+    return [];
   }
 } 
