@@ -14,34 +14,48 @@ const HomePage = () => {
 
   useEffect(() => {
     setMounted(true);
+    return () => setMounted(false);
   }, []);
 
-  const handleSearch = useCallback(async (filters: {
-    searchQuery: string;
-    brand: string;
-    minPrice: number;
-    maxPrice: number;
-    fuelType: string;
-    seatingCapacity: number;
+  const handleSearch = useCallback((filters: {
+    brand?: string;
+    model?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    fuelType?: string;
+    seatingCapacity?: number;
   }) => {
     setLoading(true);
     
     // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    setTimeout(() => {
+      const filtered = mockCars.filter(car => {
+        const searchQuery = filters.model?.toLowerCase() || '';
+        const matchesSearch = searchQuery ? 
+          car.brand.toLowerCase().includes(searchQuery) || 
+          car.model.toLowerCase().includes(searchQuery) : true;
+        const matchesBrand = !filters.brand || car.brand === filters.brand;
+        const matchesPrice = (!filters.minPrice || car.price >= filters.minPrice) && 
+                           (!filters.maxPrice || car.price <= filters.maxPrice);
+        const matchesFuelType = !filters.fuelType || car.fuelType === filters.fuelType;
+        const matchesSeating = !filters.seatingCapacity || car.seatingCapacity === filters.seatingCapacity;
 
-    const filtered = mockCars.filter(car => {
-      const matchesSearch = car.brand.toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
-                          car.model.toLowerCase().includes(filters.searchQuery.toLowerCase());
-      const matchesBrand = !filters.brand || car.brand === filters.brand;
-      const matchesPrice = car.price >= filters.minPrice && car.price <= filters.maxPrice;
-      const matchesFuelType = !filters.fuelType || car.fuelType === filters.fuelType;
-      const matchesSeating = !filters.seatingCapacity || car.seatingCapacity === filters.seatingCapacity;
+        return matchesSearch && matchesBrand && matchesPrice && matchesFuelType && matchesSeating;
+      });
 
-      return matchesSearch && matchesBrand && matchesPrice && matchesFuelType && matchesSeating;
-    });
+      // Sort the filtered results alphabetically by brand and model
+      const sortedResults = [...filtered].sort((a, b) => {
+        // First sort by brand
+        const brandCompare = a.brand.localeCompare(b.brand);
+        if (brandCompare !== 0) return brandCompare;
+        
+        // If brands are the same, sort by model
+        return a.model.localeCompare(b.model);
+      });
 
-    setFilteredCars(filtered);
-    setLoading(false);
+      setFilteredCars(sortedResults);
+      setLoading(false);
+    }, 500);
   }, []);
 
   if (!mounted) {

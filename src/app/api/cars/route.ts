@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mockCars } from '@/data/mockCars';
-import { searchCarImage } from '@/utils/googleSearch';
+import { searchCarImages } from '@/utils/googleSearch';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -50,10 +50,11 @@ export async function GET(request: NextRequest) {
   // Fetch images for filtered cars
   const carsWithImages = await Promise.all(
     filteredCars.map(async (car) => {
-      const imageUrl = await searchCarImage(car.brand, car.model, car.year.toString());
+      const searchQuery = `${car.brand} ${car.model} ${car.year}`;
+      const images = await searchCarImages(searchQuery);
       return {
         ...car,
-        imageUrl: imageUrl || car.imageUrl // Fallback to default image if Google search fails
+        imageUrl: images[0] || car.imageUrl
       };
     })
   );

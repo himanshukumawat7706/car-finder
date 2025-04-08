@@ -1,17 +1,18 @@
 'use client';
 
 import { useState, useEffect, useCallback, memo } from 'react';
+import { useRouter } from 'next/navigation';
 import { Car } from '@/types/car';
 import { searchCarImages } from '@/utils/googleSearch';
 
 interface SearchFiltersProps {
   onSearch: (filters: {
-    searchQuery: string;
-    brand: string;
-    minPrice: number;
-    maxPrice: number;
-    fuelType: string;
-    seatingCapacity: number;
+    brand?: string;
+    model?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    fuelType?: string;
+    seatingCapacity?: number;
   }) => void;
 }
 
@@ -22,60 +23,64 @@ interface SearchResult {
 }
 
 const SearchFilters = memo(({ onSearch }: SearchFiltersProps) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [brand, setBrand] = useState('');
-  const [minPrice, setMinPrice] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
-  const [fuelType, setFuelType] = useState('');
-  const [seatingCapacity, setSeatingCapacity] = useState('');
+  const router = useRouter();
+  const [filters, setFilters] = useState({
+    brand: '',
+    model: '',
+    minPrice: '',
+    maxPrice: '',
+    fuelType: '',
+    seatingCapacity: ''
+  });
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const brands = [
-    'Toyota', 'Honda', 'Maruti Suzuki', 'Hyundai', 'Tata',
-    'Mahindra', 'Kia', 'Volkswagen', 'Skoda', 'Renault',
-    'Nissan', 'Ford', 'Chevrolet', 'BMW', 'Mercedes-Benz',
-    'Audi', 'Volvo', 'Jaguar', 'Land Rover', 'Porsche'
-  ];
-
-  const fuelTypes = ['Petrol', 'Diesel', 'Electric', 'Hybrid', 'CNG'];
-  const seatingOptions = ['2', '4', '5', '7', '8'];
+  const handleSearch = () => {
+    onSearch({
+      brand: filters.brand || undefined,
+      model: filters.model || undefined,
+      minPrice: filters.minPrice ? Number(filters.minPrice) : undefined,
+      maxPrice: filters.maxPrice ? Number(filters.maxPrice) : undefined,
+      fuelType: filters.fuelType || undefined,
+      seatingCapacity: filters.seatingCapacity ? Number(filters.seatingCapacity) : undefined
+    });
+  };
 
   const debouncedSearch = useCallback(
     (filters: {
-      searchQuery: string;
-      brand: string;
-      minPrice: number;
-      maxPrice: number;
-      fuelType: string;
-      seatingCapacity: number;
+      brand?: string;
+      model?: string;
+      minPrice?: number;
+      maxPrice?: number;
+      fuelType?: string;
+      seatingCapacity?: number;
     }) => {
       const timer = setTimeout(() => {
         onSearch(filters);
-      }, 300);
-
+      }, 500);
       return () => clearTimeout(timer);
     },
     [onSearch]
   );
 
   useEffect(() => {
-    const filters = {
-      searchQuery,
-      brand,
-      minPrice: Number(minPrice) || 0,
-      maxPrice: Number(maxPrice) || 10000000,
-      fuelType,
-      seatingCapacity: Number(seatingCapacity) || 0,
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  useEffect(() => {
+    const searchFilters = {
+      brand: filters.brand || undefined,
+      model: filters.model || undefined,
+      minPrice: filters.minPrice ? Number(filters.minPrice) : undefined,
+      maxPrice: filters.maxPrice ? Number(filters.maxPrice) : undefined,
+      fuelType: filters.fuelType || undefined,
+      seatingCapacity: filters.seatingCapacity ? Number(filters.seatingCapacity) : undefined
     };
-    return debouncedSearch(filters);
-  }, [searchQuery, brand, minPrice, maxPrice, fuelType, seatingCapacity, debouncedSearch]);
+    return debouncedSearch(searchFilters);
+  }, [filters, debouncedSearch]);
 
   const handleImageSearch = async (query: string) => {
     if (!query.trim()) {
@@ -100,17 +105,14 @@ const SearchFilters = memo(({ onSearch }: SearchFiltersProps) => {
   }
 
   return (
-    <div className="bg-white shadow-md rounded-lg p-4 mb-6">
+    <div className="bg-white shadow-lg rounded-lg p-6 mb-8">
       {/* Search Bar */}
       <div className="relative mb-4">
         <input
           type="text"
           placeholder="Search for cars..."
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            handleImageSearch(e.target.value);
-          }}
+          value={filters.model}
+          onChange={(e) => setFilters({ ...filters, model: e.target.value })}
           className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-600 placeholder-opacity-100 placeholder-font-medium text-gray-900"
         />
         <button
@@ -134,121 +136,93 @@ const SearchFilters = memo(({ onSearch }: SearchFiltersProps) => {
         </button>
       </div>
 
-      {/* Search Results */}
-      {searchResults.length > 0 && (
-        <div className="absolute z-10 w-full mt-2 bg-white rounded-lg shadow-lg max-h-96 overflow-y-auto">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
-            {searchResults.map((result, index) => (
-              <div
-                key={index}
-                className="relative group cursor-pointer"
-                onClick={() => {
-                  setSearchQuery(result.title);
-                  setSearchResults([]);
-                }}
-              >
-                <img
-                  src={result.image}
-                  alt={result.title}
-                  className="w-full h-32 object-cover rounded-lg"
-                />
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 rounded-lg flex items-center justify-center">
-                  <p className="text-white opacity-0 group-hover:opacity-100 text-sm font-medium text-center px-2">
-                    {result.title}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Filter Options */}
       {isFilterOpen && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-          {/* Brand Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Brand
-            </label>
-            <select
-              value={brand}
-              onChange={(e) => setBrand(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-            >
-              <option value="" className="text-gray-600 font-medium">All Brands</option>
-              {brands.map((brand) => (
-                <option key={brand} value={brand} className="text-gray-900">
-                  {brand}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Price Range */}
-          <div className="grid grid-cols-2 gap-2">
+        <div className="flex flex-col space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Min Price (₹)
+                Brand
               </label>
-              <input
-                type="number"
-                placeholder="Min"
-                value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-600 placeholder-opacity-100 placeholder-font-medium text-gray-900"
-              />
+              <select
+                value={filters.brand}
+                onChange={(e) => setFilters({ ...filters, brand: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+              >
+                <option value="">All Brands</option>
+                <option value="Toyota">Toyota</option>
+                <option value="Honda">Honda</option>
+                <option value="Ford">Ford</option>
+                <option value="BMW">BMW</option>
+                <option value="Mercedes">Mercedes</option>
+              </select>
             </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Max Price (₹)
+                Price Range
               </label>
-              <input
-                type="number"
-                placeholder="Max"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-600 placeholder-opacity-100 placeholder-font-medium text-gray-900"
-              />
+              <div className="flex space-x-2">
+                <input
+                  type="number"
+                  placeholder="Min"
+                  value={filters.minPrice}
+                  onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-600 placeholder-opacity-100 placeholder-font-medium text-gray-900"
+                />
+                <input
+                  type="number"
+                  placeholder="Max"
+                  value={filters.maxPrice}
+                  onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-600 placeholder-opacity-100 placeholder-font-medium text-gray-900"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Fuel Type
+              </label>
+              <select
+                value={filters.fuelType}
+                onChange={(e) => setFilters({ ...filters, fuelType: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+              >
+                <option value="">All Types</option>
+                <option value="Petrol">Petrol</option>
+                <option value="Diesel">Diesel</option>
+                <option value="Electric">Electric</option>
+                <option value="Hybrid">Hybrid</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Seating Capacity
+              </label>
+              <select
+                value={filters.seatingCapacity}
+                onChange={(e) => setFilters({ ...filters, seatingCapacity: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+              >
+                <option value="">Any</option>
+                <option value="2">2 Seater</option>
+                <option value="4">4 Seater</option>
+                <option value="5">5 Seater</option>
+                <option value="7">7 Seater</option>
+                <option value="8">8+ Seater</option>
+              </select>
             </div>
           </div>
 
-          {/* Fuel Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Fuel Type
-            </label>
-            <select
-              value={fuelType}
-              onChange={(e) => setFuelType(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+          <div className="flex justify-end">
+            <button
+              onClick={handleSearch}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
-              <option value="" className="text-gray-600 font-medium">All Types</option>
-              {fuelTypes.map((type) => (
-                <option key={type} value={type} className="text-gray-900">
-                  {type}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Seating Capacity */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Seating Capacity
-            </label>
-            <select
-              value={seatingCapacity}
-              onChange={(e) => setSeatingCapacity(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-            >
-              <option value="" className="text-gray-600 font-medium">Any</option>
-              {seatingOptions.map((seats) => (
-                <option key={seats} value={seats} className="text-gray-900">
-                  {seats} Seats
-                </option>
-              ))}
-            </select>
+              Search
+            </button>
           </div>
         </div>
       )}
